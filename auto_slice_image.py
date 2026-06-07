@@ -4,7 +4,7 @@ import sys
 import argparse
 import numpy as np
 import cv2
-from PIL import Image, ImageColor
+from PIL import Image, ImageColor, ImageChops
 
 def parse_size(size_str):
     """Parse size string in WIDTHxHEIGHT format."""
@@ -189,7 +189,13 @@ def detect_objects(image_path, min_size=15, gap=30, debug_output=None):
             initial_boxes.append([x, y, x + cw, y + ch])
             
     if not initial_boxes:
-        return []
+        return [], mask
+        
+    # If solid background, fill the contours of the mask to prevent transparent holes inside the characters
+    if not is_transparent:
+        filled_mask = np.zeros_like(mask)
+        cv2.drawContours(filled_mask, contours, -1, 255, thickness=cv2.FILLED)
+        mask = filled_mask
         
     # 3. Merge close bounding boxes
     final_boxes = merge_boxes(initial_boxes, gap)
@@ -230,7 +236,7 @@ def detect_objects(image_path, min_size=15, gap=30, debug_output=None):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
         cv2.imwrite(debug_output, debug_img)
         
-    return sorted_boxes
+    return sorted_boxes, mask
 
 def main():
     parser = argparse.ArgumentParser(
@@ -263,6 +269,8 @@ def main():
                         help="當縮放模式為 pad 時的填充背景顏色 (支援 'transparent', 'white', 'black' 或 '#ffffff' 等，預設為 transparent)")
     parser.add_argument("--gentab", action="store_true",
                         help="同時為每張切圖產生 96x74 像素的 LINE 標籤頁圖示 (tab image)")
+    parser.add_argument("--remove-bg", action="store_true",
+                        help="自動去除偵測到的背景，將背景區域轉為透明（適用於 JPG 或無透明度的 PNG）")
     
     args = parser.parse_args()
 
@@ -339,8 +347,12 @@ def main():
         gen_tab = get_interactive_input("6. 是否要同時產生 96x74 的 LINE 標籤圖示 (tab image)？ [y/N，預設 N]: ", default_val='n').strip().lower()
         gentab = gen_tab.startswith('y')
         
-        # 8. Output directory
-        output_dir = get_interactive_input("7. 請輸入輸出資料夾路徑 (直接按 Enter 會在圖片旁建立同名資料夾): ", default_val=None)
+        # 8. Remove Background
+        rem_bg = get_interactive_input("7. 是否要自動去除偵測到的背景，將背景區域轉為透明？ [y/N，預設 N]: ", default_val='n').strip().lower()
+        remove_bg = rem_bg.startswith('y')
+        
+        # 9. Output directory
+        output_dir = get_interactive_input("8. 請輸入輸出資料夾路徑 (直接按 Enter 會在圖片旁建立同名資料夾): ", default_val=None)
     else:
         image_path = args.image_path.strip('\'"')
         gap = args.gap
@@ -351,6 +363,7 @@ def main():
         pad_color = args.pad_color
         output_dir = args.output_dir
         gentab = args.gentab
+        remove_bg = args.remove_bg
         
         if not os.path.isfile(image_path):
             print(f"錯誤: 找不到輸入圖片檔案 '{image_path}'。")
@@ -376,6 +389,8 @@ def main():
             print(f"填充背景: {pad_color}")
     else:
         print("輸出尺寸: 保持貼圖原始偵測邊界大小 (無損)")
+    if remove_bg:
+        print("背景處理: 自動偵測並去除背景（轉為透明）")
     if gentab:
         print("同時產生: 96x74 標籤頁圖示 (tab image)")
     print(f"輸出目錄: {output_dir}")
@@ -385,7 +400,7 @@ def main():
 
     try:
         # Detect objects bounding boxes
-        boxes = detect_objects(image_path, min_size=min_size, gap=gap, debug_output=debug_image)
+        boxes, mask = detect_objects(image_path, min_size=min_size, gap=gap, debug_output=debug_image)
         
         if not boxes:
             print("錯誤: 未偵測到任何貼圖。請確認圖片是否非空白，或嘗試調整間距與雜訊過濾參數。")
@@ -405,6 +420,15 @@ def main():
             # Crop using PIL (box coordinates are x1, y1, x2, y2)
             slice_img = img.crop((x1, y1, x2, y2))
             
+            # Remove background if requested
+            if remove_bg:
+                slice_img = slice_img.convert('RGBA')
+                mask_crop = mask[y1:y2, x1:x2]
+                mask_crop_pil = Image.fromarray(mask_crop).convert('L')
+                r, g, b, a = slice_img.split()
+                new_a = ImageChops.darker(a, mask_crop_pil)
+                slice_img = Image.merge('RGBA', (r, g, b, new_a))
+                
             # Save tab image if gentab is True (generate from cropped original)
             if gentab:
                 tab_img = resize_image(slice_img, (96, 74), 'pad', (0, 0, 0, 0))

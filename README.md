@@ -9,6 +9,7 @@
    - 透過 OpenCV 電腦視覺演算法自動識別非均勻排列的貼圖邊緣。
    - 內建「間距合併演算法」(`--gap`)，會自動將靠得很近的文字、特效或陰影與貼圖本體合併，避免被撕裂裁切。
    - 支援透明背景 PNG，若為一般 JPG 也會自動偵測角落背景色進行智慧去背識別。
+   - **背景去除功能 (`--remove-bg`)**：能自動將偵測到的背景底色轉為完全透明（適用於 JPG 或無透明度的 PNG）。
 2. **均勻網格切圖 (`slice_image.py`)**：
    - 自由指定水平欄數 (Columns) 及垂直列數 (Rows) 進行網格狀完美切割。
 3. **單圖縮放工具 (`resize_image.py`)**：
@@ -58,6 +59,16 @@ python3 auto_slice_image.py
 * **自動識別切圖，並將貼圖全部縮放至 LINE 規格 `240x240`（透明背景填充）**：
   ```bash
   python3 auto_slice_image.py input.png -g 5 -s 240x240 -m pad
+  ```
+
+* **自動識別切圖，並去除偵測到的底色背景（直接輸出成去背透明貼圖）**：
+  ```bash
+  python3 auto_slice_image.py input.png -g 5 --remove-bg
+  ```
+
+* **自動識別切圖，且同時進行去背、縮放至 `240x240`、並輸出 LINE 96x74 標籤圖**：
+  ```bash
+  python3 auto_slice_image.py input.png -g 5 -s 240x240 -m pad --remove-bg --gentab
   ```
 
 * **自動識別切圖，並輸出偵測框預覽圖 (`-d`) 以便檢查結果**：
