@@ -261,6 +261,8 @@ def main():
                         help="縮放模式: stretch (拉伸符合), fit (等比例縮小), pad (等比例縮小並填充背景，預設模式)")
     parser.add_argument("--pad-color", type=parse_color, default='transparent',
                         help="當縮放模式為 pad 時的填充背景顏色 (支援 'transparent', 'white', 'black' 或 '#ffffff' 等，預設為 transparent)")
+    parser.add_argument("--gentab", action="store_true",
+                        help="同時為每張切圖產生 96x74 像素的 LINE 標籤頁圖示 (tab image)")
     
     args = parser.parse_args()
 
@@ -333,8 +335,12 @@ def main():
             base_name = os.path.splitext(os.path.basename(image_path))[0]
             debug_image = os.path.join(dir_name, f"{base_name}_debug_boxes.png")
             
-        # 7. Output directory
-        output_dir = get_interactive_input("6. 請輸入輸出資料夾路徑 (直接按 Enter 會在圖片旁建立同名資料夾): ", default_val=None)
+        # 7. Generate LINE Tab Image
+        gen_tab = get_interactive_input("6. 是否要同時產生 96x74 的 LINE 標籤圖示 (tab image)？ [y/N，預設 N]: ", default_val='n').strip().lower()
+        gentab = gen_tab.startswith('y')
+        
+        # 8. Output directory
+        output_dir = get_interactive_input("7. 請輸入輸出資料夾路徑 (直接按 Enter 會在圖片旁建立同名資料夾): ", default_val=None)
     else:
         image_path = args.image_path.strip('\'"')
         gap = args.gap
@@ -344,6 +350,7 @@ def main():
         resize_mode = args.resize_mode
         pad_color = args.pad_color
         output_dir = args.output_dir
+        gentab = args.gentab
         
         if not os.path.isfile(image_path):
             print(f"錯誤: 找不到輸入圖片檔案 '{image_path}'。")
@@ -369,6 +376,8 @@ def main():
             print(f"填充背景: {pad_color}")
     else:
         print("輸出尺寸: 保持貼圖原始偵測邊界大小 (無損)")
+    if gentab:
+        print("同時產生: 96x74 標籤頁圖示 (tab image)")
     print(f"輸出目錄: {output_dir}")
     if debug_image:
         print(f"偵測框預覽圖將儲存於: {debug_image}")
@@ -396,7 +405,14 @@ def main():
             # Crop using PIL (box coordinates are x1, y1, x2, y2)
             slice_img = img.crop((x1, y1, x2, y2))
             
-            # Resize if specified
+            # Save tab image if gentab is True (generate from cropped original)
+            if gentab:
+                tab_img = resize_image(slice_img, (96, 74), 'pad', (0, 0, 0, 0))
+                tab_filename = f"{base_name}_auto_{i+1:0{digits}d}_tab.png"
+                tab_output_path = os.path.join(output_dir, tab_filename)
+                tab_img.save(tab_output_path, 'PNG', optimize=True)
+                
+            # Resize main image if specified
             if size:
                 slice_img = resize_image(slice_img, size, resize_mode, pad_color)
                 
@@ -406,7 +422,10 @@ def main():
             # Save losslessly (PNG)
             slice_img.save(output_path, 'PNG', optimize=True)
             saved_count += 1
-            print(f"[{saved_count}/{len(boxes)}] 已儲存: {filename} ({slice_img.size[0]}x{slice_img.size[1]})")
+            if gentab:
+                print(f"[{saved_count}/{len(boxes)}] 已儲存: {filename} ({slice_img.size[0]}x{slice_img.size[1]}) 與 {tab_filename} (96x74)")
+            else:
+                print(f"[{saved_count}/{len(boxes)}] 已儲存: {filename} ({slice_img.size[0]}x{slice_img.size[1]})")
             
         print("\n" + "="*50)
         print(f"處理完成！成功自動裁切並儲存 {saved_count} 張貼圖。")
