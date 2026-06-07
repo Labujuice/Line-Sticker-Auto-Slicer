@@ -17,7 +17,7 @@ def parse_size(size_str):
             raise ValueError()
         return w, h
     except ValueError:
-        raise argparse.ArgumentTypeError("尺寸格式必須是 寬x高，例如: 370x320，且必須為正整數。")
+        raise argparse.ArgumentTypeError("尺寸格式必須是 寬x高，例如: 240x240，且必須為正整數。")
 
 def parse_color(color_str):
     """Parse color string, supporting 'transparent' and hex/names."""
@@ -115,8 +115,8 @@ def main():
   # 命令行模式 - 將圖片切成 4x4 的網格並儲存至預設目錄:
   python3 slice_image.py input.png -c 4 -r 4
   
-  # 命令行模式 - 切成 2x3 網格，並將每張切圖縮放到 370x320 像素，超出部分透明填充:
-  python3 slice_image.py input.png -c 2 -r 3 -s 370x320 -m pad --pad-color transparent
+  # 命令行模式 - 切成 2x3 網格，並將每張切圖縮放到 240x240 像素，超出部分透明填充:
+  python3 slice_image.py input.png -c 2 -r 3 -s 240x240 -m pad --pad-color transparent
   
   # 命令行模式 - 切成 2x2 網格，縮小至 100x100 像素，使用白色背景填充，儲存至指定目錄:
   python3 slice_image.py input.png -c 2 -r 2 -s 100x100 -m pad --pad-color white -o ./output_folder
@@ -127,7 +127,7 @@ def main():
     parser.add_argument("-c", "--cols", type=int, help="橫向切分數量 (列數/Columns)，必須大於等於 1")
     parser.add_argument("-r", "--rows", type=int, help="縱向切分數量 (行數/Rows)，必須大於等於 1")
     parser.add_argument("-o", "--output-dir", help="輸出圖片的目錄路徑 (預設在輸入圖片同目錄下建立子資料夾)")
-    parser.add_argument("-s", "--size", type=parse_size, help="輸出每張切圖的指定尺寸，格式為 寬x高 (例如: 370x320)")
+    parser.add_argument("-s", "--size", type=parse_size, help="輸出每張切圖的指定尺寸，格式為 寬x高 (例如: 240x240)")
     parser.add_argument("-m", "--resize-mode", choices=['stretch', 'fit', 'pad'], default='pad',
                         help="縮放模式: stretch (拉伸符合), fit (等比例縮放至邊界內), pad (等比例縮小並填充背景，預設模式)")
     parser.add_argument("--pad-color", type=parse_color, default='transparent',
@@ -171,7 +171,7 @@ def main():
                 return None
             return parse_size(v)
             
-        size = get_interactive_input("4. 請輸入指定輸出尺寸 [寬x高] (例如 370x320，直接按 Enter 略過不縮放): ", default_val=None, validator=validate_optional_size)
+        size = get_interactive_input("4. 請輸入指定輸出尺寸 [寬x高] (例如 240x240，直接按 Enter 略過不縮放): ", default_val=None, validator=validate_optional_size)
         
         # 5. Resize mode and padding color if size specified
         resize_mode = 'pad'

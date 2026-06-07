@@ -19,7 +19,7 @@ def parse_size(size_str):
             raise ValueError()
         return w, h
     except ValueError:
-        raise argparse.ArgumentTypeError("尺寸格式必須是 寬x高，例如: 370x320，且必須為正整數。")
+        raise argparse.ArgumentTypeError("尺寸格式必須是 寬x高，例如: 240x240，且必須為正整數。")
 
 def parse_color(color_str):
     """Parse color string, supporting 'transparent' and hex/names."""
@@ -244,8 +244,8 @@ def main():
   # 命令行模式 - 自動偵測並切割圖片，忽略小於 10px 的雜訊，將間距小於 40px 的物件合併為同一張貼圖:
   python3 auto_slice_image.py input.png --gap 40 --min-size 10
   
-  # 命令行模式 - 切割後將每張貼圖大小縮放至 370x320 像素，並在同目錄生成偵測框預覽圖 debug.png:
-  python3 auto_slice_image.py input.png -s 370x320 -d debug.png
+  # 命令行模式 - 切割後將每張貼圖大小縮放至 240x240 像素，並在同目錄生成偵測框預覽圖 debug.png:
+  python3 auto_slice_image.py input.png -s 240x240 -d debug.png
 """
     )
     
@@ -256,7 +256,7 @@ def main():
                         help="忽略的最小物件寬高 (像素)。可用於過濾極小雜訊 (預設: 15)")
     parser.add_argument("-d", "--debug-image", help="選填。指定一個檔案路徑來儲存『偵測框標示預覽圖』(例如: debug.png)")
     parser.add_argument("-o", "--output-dir", help="輸出圖片的目錄路徑 (預設在輸入圖片同目錄下建立子資料夾)")
-    parser.add_argument("-s", "--size", type=parse_size, help="輸出每張切圖的指定尺寸，格式為 寬x高 (例如: 370x320)")
+    parser.add_argument("-s", "--size", type=parse_size, help="輸出每張切圖的指定尺寸，格式為 寬x高 (例如: 240x240)")
     parser.add_argument("-m", "--resize-mode", choices=['stretch', 'fit', 'pad'], default='pad',
                         help="縮放模式: stretch (拉伸符合), fit (等比例縮小), pad (等比例縮小並填充背景，預設模式)")
     parser.add_argument("--pad-color", type=parse_color, default='transparent',
@@ -301,7 +301,7 @@ def main():
             if not v or v.lower() == 'none' or v.lower() == 'skip':
                 return None
             return parse_size(v)
-        size = get_interactive_input("4. 請輸入指定輸出尺寸 [寬x高] (例如 370x320，直接按 Enter 略過不縮放): ", default_val=None, validator=validate_optional_size)
+        size = get_interactive_input("4. 請輸入指定輸出尺寸 [寬x高] (例如 240x240，直接按 Enter 略過不縮放): ", default_val=None, validator=validate_optional_size)
         
         # 5. Resize mode and padding color if size specified
         resize_mode = 'pad'
