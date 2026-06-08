@@ -432,7 +432,7 @@ def main():
             # Save tab image if gentab is True (generate from cropped original)
             if gentab:
                 tab_img = resize_image(slice_img, (96, 74), 'pad', (0, 0, 0, 0))
-                tab_filename = f"{base_name}_auto_{i+1:0{digits}d}_tab.png"
+                tab_filename = f"{i+1:0{max(2, digits)}d}_tab.png"
                 tab_output_path = os.path.join(output_dir, tab_filename)
                 tab_img.save(tab_output_path, 'PNG', optimize=True)
                 
@@ -440,7 +440,7 @@ def main():
             if size:
                 slice_img = resize_image(slice_img, size, resize_mode, pad_color)
                 
-            filename = f"{base_name}_auto_{i+1:0{digits}d}.png"
+            filename = f"{i+1:0{max(2, digits)}d}.png"
             output_path = os.path.join(output_dir, filename)
             
             # Save losslessly (PNG)

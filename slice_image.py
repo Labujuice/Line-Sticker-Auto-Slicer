@@ -271,9 +271,10 @@ def main():
                 if size:
                     slice_img = resize_image(slice_img, size, resize_mode, pad_color)
                 
-                # Form filename using 1-based indexing
-                # Format: name_r01_c01.png
-                filename = f"{base_name}_r{r+1:0{row_digits}d}_c{c+1:0{col_digits}d}.png"
+                # Form filename using 1-based sequential indexing (e.g., 01.png, 02.png)
+                total_slices = cols * rows
+                digits = len(str(total_slices))
+                filename = f"{saved_count+1:0{max(2, digits)}d}.png"
                 output_path = os.path.join(output_dir, filename)
                 
                 # Save losslessly (PNG is lossless and supports transparency)

@@ -107,9 +107,10 @@ python3 slice_image.py
   python3 resize_image.py input.png -s 240x240
   ```
 
-* **縮放至 `240x240`，並指定輸出檔名為 `tab.png`**：
+* **一鍵生成 LINE 貼圖封面與標籤圖 (`--gencover`)**：
+  直接指定一張切好的貼圖（例如 `01.png`），自動輸出封面圖 `main.png` (240x240) 與標籤圖 `tab.png` (96x74)，皆為等比例縮放且透明填充：
   ```bash
-  python3 resize_image.py input.png -s 240x240 -o tab.png
+  python3 resize_image.py 01.png --gencover
   ```
 
 ---
@@ -123,3 +124,4 @@ python3 slice_image.py
 
 ## 📁 預設輸出位置
 - 若未指定 `-o` (輸出目錄/路徑)，裁切工具會在輸入圖片的同目錄下，自動建立一個名為 `[圖片名稱]_auto_slices` 或 `[圖片名稱]_slices` 的資料夾放置所有生成的圖片，不會弄髒您的專案目錄。
+- **命名規則**：所有切割出來的貼圖皆會使用**兩位數順序編號**進行命名（例如：`01.png`, `02.png`, `03.png`...），方便您一眼看出貼圖序號，也方便後續指定特定的貼圖生成 `main/tab` 封面。

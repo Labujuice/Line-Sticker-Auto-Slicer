@@ -89,22 +89,31 @@ def main():
   # 將一張貼圖縮小到 240x240，超出部分用透明填充，預設輸出為 input_resized.png:
   python3 resize_image.py input.png -s 240x240
   
+  # 一鍵將指定的貼圖 (如 01.png) 生成 LINE 規範的封面圖 (main.png, 240x240) 與標籤圖 (tab.png, 96x74):
+  python3 resize_image.py 01.png --gencover
+  
   # 縮小到 240x240，使用白色背景填充，儲存至指定的輸出路徑:
   python3 resize_image.py input.png -s 240x240 -m pad --pad-color white -o output.png
 """
     )
     
     parser.add_argument("image_path", help="輸入圖片的檔案路徑")
-    parser.add_argument("-s", "--size", type=parse_size, required=True,
-                        help="指定輸出尺寸，格式為 寬x高 (例如: 240x240)")
-    parser.add_argument("-o", "--output", help="選填。輸出圖片檔案路徑 (預設在原檔名後加上 _resized)")
+    parser.add_argument("-s", "--size", type=parse_size,
+                        help="指定輸出尺寸，格式為 寬x高 (例如: 240x240)。如果未使用 --gencover，則此項為必填")
+    parser.add_argument("-o", "--output", help="選填。輸出圖片檔案路徑 (預設在原檔名後加上 _resized，使用 --gencover 時無效)")
     parser.add_argument("-m", "--mode", choices=['stretch', 'fit', 'pad'], default='pad',
                         help="縮放模式: stretch (拉伸), fit (等比例縮放), pad (等比例縮放並填補背景，預設模式)")
     parser.add_argument("--pad-color", type=parse_color, default='transparent',
                         help="當縮放模式為 pad 時的填充背景顏色 (支援 'transparent', 'white', 'black' 或 '#ffffff'，預設為 transparent)")
+    parser.add_argument("--gencover", action="store_true",
+                        help="一鍵生成 LINE 貼圖所需的封面圖 main.png (240x240) 與標籤圖 tab.png (96x74)")
     
     args = parser.parse_args()
     
+    # Validation
+    if not args.gencover and not args.size:
+        parser.error("當未使用 --gencover 時，必須指定 -s/--size 參數。")
+        
     image_path = args.image_path.strip('\'"')
     if not os.path.isfile(image_path):
         print(f"錯誤: 找不到輸入圖片檔案 '{image_path}'。")
@@ -114,7 +123,6 @@ def main():
     if not args.output:
         dir_name = os.path.dirname(image_path)
         base_name, ext = os.path.splitext(os.path.basename(image_path))
-        # Ensure we always save as PNG for transparency support when padding or lossless output is expected
         output_path = os.path.join(dir_name, f"{base_name}_resized.png")
     else:
         output_path = os.path.abspath(args.output)
@@ -123,12 +131,30 @@ def main():
         img = Image.open(image_path)
         print(f"原始尺寸: {img.size[0]}x{img.size[1]} ({img.mode})")
         
-        resized_img = resize_image(img, args.size, args.mode, args.pad_color)
-        
-        # Save losslessly (PNG)
-        resized_img.save(output_path, 'PNG', optimize=True)
-        print(f"處理完成！已儲存至: {output_path} ({resized_img.size[0]}x{resized_img.size[1]})")
-        
+        if args.gencover:
+            dir_name = os.path.dirname(image_path)
+            if not dir_name:
+                dir_name = "."
+                
+            main_path = os.path.join(dir_name, "main.png")
+            tab_path = os.path.join(dir_name, "tab.png")
+            
+            # Generate main.png (240x240, pad mode, transparent)
+            main_img = resize_image(img, (240, 240), 'pad', (0, 0, 0, 0))
+            main_img.save(main_path, 'PNG', optimize=True)
+            print(f"已生成封面圖: {main_path} (240x240)")
+            
+            # Generate tab.png (96x74, pad mode, transparent)
+            tab_img = resize_image(img, (96, 74), 'pad', (0, 0, 0, 0))
+            tab_img.save(tab_path, 'PNG', optimize=True)
+            print(f"已生成標籤圖: {tab_path} (96x74)")
+            
+        else:
+            resized_img = resize_image(img, args.size, args.mode, args.pad_color)
+            # Save losslessly (PNG)
+            resized_img.save(output_path, 'PNG', optimize=True)
+            print(f"處理完成！已儲存至: {output_path} ({resized_img.size[0]}x{resized_img.size[1]})")
+            
     except Exception as e:
         print(f"縮放圖片時發生錯誤: {e}")
         sys.exit(1)
